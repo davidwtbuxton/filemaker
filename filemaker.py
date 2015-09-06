@@ -1,16 +1,16 @@
 # Copyright (c) 2009, David Buxton <david@gasmark6.com>
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright
 # notice, this list of conditions and the following disclaimer.
 #     * Redistributions in binary form must reproduce the above copyright
 # notice, this list of conditions and the following disclaimer in the
 # documentation and/or other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
 # IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
 # TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -56,16 +56,16 @@ DEFAULT_DATEFMT = '%Y/%m/%d'
 
 class FMPImporter(object):
     """Provides a mapping between a Filemaker record and a Django record.
-    
+
     fields is a dictionary with field names as keys and values a four-tuple of
     ('field_name', 'TYPE', MAXREPEAT, allowempty)
-    
+
     """
     def __init__(self, datefmt=None):
         self.fields = SortedDict()
         self.datefmt = datefmt or DEFAULT_DATEFMT
         self.database = XMLNode('DATABASE')
-        
+
     def add_field(self, node):
         name = node.attrs['NAME']
         kind = node.attrs['TYPE']
@@ -73,7 +73,7 @@ class FMPImporter(object):
         empty = False
         if node.attrs['EMPTYOK'] == 'YES':
             empty = True
-            
+
         self.fields[name] = (name, kind, maxrepeat, empty)
 
     def add_database(self, node):
@@ -96,15 +96,15 @@ class FMPImporter(object):
                 print "Couldn't format column %s:'%s' as %s" % (name, dic[key], kind)
                 raise
             new_dic[key] = value
-            
+
         return new_dic
-    
+
     def format_node(self, node):
         """Returns a new SortedDict for the XML node."""
         vals = [data.text for col in node.children for data in col.children]
         row = SortedDict(zip(self.field_names(), vals))
         return self.format_dict(row)
-        
+
     def format_value(self, name, kind, value, row, maxrepeat=None, empty=True):
         if kind == 'NUMBER':
             return self.format_number(name, kind, value, row, maxrepeat, empty)
@@ -141,19 +141,19 @@ class FMPImporter(object):
         stripped.
         """
         return unicode(value).strip()
-        
+
     def import_node(self, node):
         """Convert an XML node to a more useful dictionary."""
         print node.attrs['RECORDID']
-    
-        
+
+
 class XMLNode(object):
     def __init__(self, name, attrs=None, text=None, children=None):
         self.name = name
         self.attrs = attrs or {}
         self.text = text or ''
         self.children = children or []
-    
+
     def __repr__(self):
         s = super(XMLNode, self).__repr__()
         idx = s.find(' ')
@@ -164,15 +164,15 @@ class FMPXMLHandler(ContentHandler):
     def __init__(self, importer=None):
         self.importer = importer or FMPImporter()
         self._depth = []
-        
+
     def setDocumentLocator(self, locator):
         """Called by parser to give the location of document events."""
-    
+
     def startElement(self, name, attrs):
         """Signals the start of an element in non-namespace mode."""
         node = XMLNode(name, attrs)
         self.push_node(node)
-            
+
     def endElement(self, name):
         """Signals the end of an element in non-namespace mode."""
         node = self.pop_node()
@@ -184,13 +184,13 @@ class FMPXMLHandler(ContentHandler):
             self.importer.import_node(node)
             # Delete the reference from the parent node to free memory
             self.current_node.children[:] = self.current_node.children[:-1]
-        
+
     def characters(self, content):
         """Receives notification of character data."""
         node = self.current_node
         if node.name in ('ROW', 'COL', 'DATA'):
             node.text += content
-    
+
     def push_node(self, node):
         """Append the node as a child to the current node and make it the
         current node.
@@ -199,11 +199,11 @@ class FMPXMLHandler(ContentHandler):
             self.current_node.children.append(node)
 
         self._depth.append(node)
-        
+
     def pop_node(self):
         """Return the current node."""
         return self._depth.pop()
-    
+
     @property
     def current_node(self):
         """Return the current node or the root node."""
@@ -211,11 +211,11 @@ class FMPXMLHandler(ContentHandler):
             return self._depth[-1]
         else:
             return None
-            
-        
+
+
 def flexitime(value):
     """Return a datetime.time object for the string or None.
-    
+
     >>> flexitime('12:00:00')
     datetime.time(12, 0)
     >>> flexitime('12:00:59')
@@ -256,22 +256,21 @@ def flexitime(value):
         if h > 23:
             h = 0
         return datetime.time(h, m, s)
-        
+
 
 def importfile(filename, importer=None):
     """Import a file using the given FMPImporter instance."""
     xml.sax.parse(filename, FMPXMLHandler(importer=importer))
 
-    
+
 def main(argv):
     from django.conf import settings
-    
+
     settings.DEBUG = False
     importfile(argv[1])
-            
-    
+
+
 if __name__ == "__main__":
     import sys
-    
+
     main(sys.argv)
-    

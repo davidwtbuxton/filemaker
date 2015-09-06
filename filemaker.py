@@ -29,8 +29,8 @@ exporting, choose XML with FMPXMLRESULT grammar.
 """
 
 
-from django.utils.datastructures import SortedDict
 from xml.sax.handler import ContentHandler, ErrorHandler
+import collections
 import datetime
 import re
 import time
@@ -62,7 +62,7 @@ class FMPImporter(object):
 
     """
     def __init__(self, datefmt=None):
-        self.fields = SortedDict()
+        self.fields = collections.OrderedDict()
         self.datefmt = datefmt or DEFAULT_DATEFMT
         self.database = XMLNode('DATABASE')
 
@@ -84,10 +84,10 @@ class FMPImporter(object):
         return self.fields.keys()
 
     def format_dict(self, dic):
-        """Returns a new SortedDict with values formatted according to the known
+        """Returns a new dict with values formatted according to the known
         Filemaker field definitions.
         """
-        new_dic = SortedDict()
+        new_dic = collections.OrderedDict()
         for key in dic:
             name, kind, maxrepeat, empty = self.fields[key]
             try:
@@ -100,9 +100,9 @@ class FMPImporter(object):
         return new_dic
 
     def format_node(self, node):
-        """Returns a new SortedDict for the XML node."""
+        """Returns a new dict for the XML node."""
         vals = [data.text for col in node.children for data in col.children]
-        row = SortedDict(zip(self.field_names(), vals))
+        row = collections.OrderedDict(zip(self.field_names(), vals))
         return self.format_dict(row)
 
     def format_value(self, name, kind, value, row, maxrepeat=None, empty=True):
@@ -264,9 +264,6 @@ def importfile(filename, importer=None):
 
 
 def main(argv):
-    from django.conf import settings
-
-    settings.DEBUG = False
     importfile(argv[1])
 
 

@@ -1,0 +1,4 @@
+include LICENSE.txt
+include README.txt
+include filemaker.py
+include setup.py

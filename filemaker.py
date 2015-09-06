@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """Efficient importer for Filemaker XML.
 
-A tool for importing to Django data exported from Filemaker Pro in XML. When
+A tool for converting data exported from Filemaker Pro in XML. When
 exporting, choose XML with FMPXMLRESULT grammar.
 """
 
 
-from xml.sax.handler import ContentHandler, ErrorHandler
+from xml.sax.handler import ContentHandler
 import collections
 import datetime
 import re
@@ -32,13 +32,12 @@ DEFAULT_DATEFMT = '%Y/%m/%d'
 
 
 class FMPImporter(object):
-    """Provides a mapping between a Filemaker record and a Django record.
-
-    fields is a dictionary with field names as keys and values a four-tuple of
-    ('field_name', 'TYPE', MAXREPEAT, allowempty)
-
+    """Import class for Filemaker data. Sub-class this, and override the
+    import_node method.
     """
     def __init__(self, datefmt=None):
+        # fields is a dictionary with field names as keys and values a
+        # four-tuple of ('field_name', 'TYPE', MAXREPEAT, allowempty).
         self.fields = collections.OrderedDict()
         self.datefmt = datefmt or DEFAULT_DATEFMT
         self.database = XMLNode('DATABASE')
